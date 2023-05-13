@@ -11,6 +11,9 @@ import (
 )
 
 var (
+	ErrBackendPortOpen     = errors.New("Backend: port open error")
+	ErrBackendPortFlush    = errors.New("Backend: port flush error")
+	ErrBackendSlcanInit    = errors.New("Backend: SLCAN initialise error")
 	ErrBackendInvalidID    = errors.New("Backend: invalid ID")
 	ErrBackendInvalidData  = errors.New("Backend: invalid data")
 	ErrBackendInvalidFrame = errors.New("Backend: invalid frame")
@@ -36,11 +39,12 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 	c := &serial.Config{Name: port, Baud: baud, ReadTimeout: timeout}
 	s, err := serial.OpenPort(c)
 	if err != nil {
+		return ErrBackendPortOpen
 	}
 
 	err = s.Flush()
 	if err != nil {
-
+		return ErrBackendPortFlush
 	}
 
 	rlptr := 0
@@ -49,7 +53,7 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 	// Initialise SLCAN port
 	_, err = s.Write([]byte("C\rO\r\x00"))
 	if err != nil {
-		return err
+		return ErrBackendSlcanInit
 	}
 
 	for {
@@ -74,12 +78,10 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 						if m, err := decapsSlcanFrame(rl); err == nil {
 							_ = db.WriteData(m)
 						} else {
-							return err
 						}
 					}
 				}
 			} else {
-				return err
 			}
 		}
 	}
@@ -127,7 +129,7 @@ func decapsSlcanFrame(f []byte) (Message, error) {
 
 	if f[0] == 't' {
 		id, err := strconv.ParseInt(string(f[1:4]), 16, 32)
-		if err != nil {
+		if err != nil || id >= 0x800 {
 			return Message{}, ErrBackendInvalidID
 		}
 		m.ID = uint32(id)
@@ -135,7 +137,7 @@ func decapsSlcanFrame(f []byte) (Message, error) {
 		p = 5
 	} else if f[0] == 'T' {
 		id, err := strconv.ParseInt(string(f[1:9]), 16, 32)
-		if err != nil {
+		if err != nil || id >= 0x20000000 {
 			return Message{}, ErrBackendInvalidID
 		}
 		m.ID = uint32(id)
@@ -149,43 +151,16 @@ func decapsSlcanFrame(f []byte) (Message, error) {
 		return Message{}, ErrBackendInvalidData
 	}
 
-	l := len(f)
-	if l != p+dlc*2 {
-		return Message{}, ErrBackendInvalidData
-	}
-
-	if f[l] != byte('\r') {
+	if f[p+dlc*2] != byte('\r') {
 		return Message{}, ErrBackendInvalidFrame
 	}
 
-	f = f[p:l]
+	f = f[p : p+dlc*2]
 	d := make([]byte, dlc)
 	if _, err := hex.Decode(d, f); err != nil {
-		return Message{}, ErrBackendInvalidData
+		return Message{}, ErrBackendInvalidFrame
 	}
 	m.Data = string(d)
 
 	return m, nil
 }
-
-// func SerialReadLine(s *serial.Port) []byte {
-// 	p := 0
-// 	max := len("T1234567880123456789abcdef\r\x00")
-// 	ln := make([]byte, max)
-// 	for {
-// 		rb := make([]byte, 1)
-// 		if n, err := s.Read(rb); n > 0 && err == nil {
-// 			fmt.Print(rb)
-// 			ln[p] = rb[0]
-// 			p += 1
-// 			if p >= max {
-// 				p = 0
-// 			} else {
-// 				if ln[p-1] == byte('\r') || ln[p-1] == byte('\n') {
-// 					ln[p] = byte('\x00')
-// 					return ln
-// 				}
-// 			}
-// 		}
-// 	}
-// }
