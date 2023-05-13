@@ -33,7 +33,7 @@ func (d *Database) GetData(id uint32) (Message, error) {
 func (d *Database) PostData(m Message) error {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-	m, ok := d.db[m.ID]
+	_, ok := d.db[m.ID]
 	if ok {
 		return ErrDatabaseAlreadyExists
 	}
@@ -44,7 +44,7 @@ func (d *Database) PostData(m Message) error {
 func (d *Database) PutData(id uint32, m Message) error {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-	m, ok := d.db[id]
+	_, ok := d.db[id]
 	if !ok {
 		return ErrDatabaseNotFound
 	}
