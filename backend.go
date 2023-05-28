@@ -1,37 +1,48 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/tarm/serial"
 )
 
 var (
 	ErrBackendPortOpen     = errors.New("Backend: port open error")
+	ErrBackendPortClose    = errors.New("Backend: port close error")
 	ErrBackendPortFlush    = errors.New("Backend: port flush error")
 	ErrBackendSlcanInit    = errors.New("Backend: SLCAN initialise error")
 	ErrBackendInvalidID    = errors.New("Backend: invalid ID")
 	ErrBackendInvalidData  = errors.New("Backend: invalid data")
 	ErrBackendInvalidFrame = errors.New("Backend: invalid frame")
+	ErrBackendReboot       = errors.New("Backend: reboot failed")
+	ErrBackendOnhold       = errors.New("Backend: on hold")
+	ErrBackendMsgQueue     = errors.New("Backend: message queue ping failed")
 )
 
 type Backend interface {
 	Handler(port string, baud int, timeout time.Duration) error
 	GetMessage(id string) error
 	PostMessage(m Message) error
+	Reboot() error
 }
 
 type SlcanBackend struct {
-	ch chan Message
+	ch   chan Message
+	rst  chan bool
+	hold bool
 }
 
 func NewSlcanBackend() Backend {
 	return &SlcanBackend{
-		ch: make(chan Message),
+		ch:   make(chan Message),
+		rst:  make(chan bool),
+		hold: false,
 	}
 }
 
@@ -64,6 +75,50 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 			} else {
 				return err
 			}
+		case <-b.rst:
+			// Frontend receives "Reboot" request, prompt SLCAN device to reset
+			if _, err := s.Write([]byte("bbbbbb\r\x00")); err != nil {
+				return ErrBackendReboot
+			}
+			// Wait for SLCAN device to reboot
+			time.Sleep(3 * time.Second)
+			// SLCAN boots into MCUboot, prompt MCUboot to enter serial recovery mode
+			if _, err := s.Write([]byte("bbbbbb")); err != nil {
+				return ErrBackendReboot
+			}
+			// To prevent frontend requests from accessing serial backend
+			b.hold = true
+			// Wait for any ongoing serial transactions to complete
+			time.Sleep(3 * time.Second)
+			// Close serial connection
+			if err := s.Close(); err != nil {
+				return ErrBackendPortOpen
+			}
+			// Ping MCUmgr service for firmware update
+			if err := msgQueuePing(); err != nil {
+				return err
+			}
+			// Wait for MCUmgr service to establish serial connection
+			time.Sleep(10 * time.Second)
+			// Attemp to recover serial connection once MCUmgr service handover
+			for {
+				s, err = serial.OpenPort(c)
+				if err == nil {
+					err = s.Flush()
+					if err != nil {
+						return ErrBackendPortFlush
+					}
+					_, err = s.Write([]byte("C\rO\r\x00"))
+					if err != nil {
+						return ErrBackendSlcanInit
+					}
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			// Recover requests from frontend
+			b.hold = false
+
 		default:
 			rb := make([]byte, 1)
 			if n, err := s.Read(rb); n > 0 && err == nil {
@@ -88,11 +143,22 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 }
 
 func (b *SlcanBackend) GetMessage(id string) error {
+	if b.hold == true {
+		return ErrBackendOnhold
+	}
 	return nil
 }
 
 func (b *SlcanBackend) PostMessage(m Message) error {
+	if b.hold == true {
+		return ErrBackendOnhold
+	}
 	b.ch <- m
+	return nil
+}
+
+func (b *SlcanBackend) Reboot() error {
+	b.rst <- true
 	return nil
 }
 
@@ -163,4 +229,46 @@ func decapsSlcanFrame(f []byte) (Message, error) {
 	m.Data = string(d)
 
 	return m, nil
+}
+
+func msgQueuePing() error {
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		return ErrBackendMsgQueue
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return ErrBackendMsgQueue
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		"handover", // name
+		false,      // durable
+		false,      // delete when unused
+		false,      // exclusive
+		false,      // no-wait
+		nil,        // arguments
+	)
+	if err != nil {
+		return ErrBackendMsgQueue
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = ch.PublishWithContext(ctx,
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(""),
+		})
+	if err != nil {
+		return ErrBackendMsgQueue
+	}
+	return nil
 }

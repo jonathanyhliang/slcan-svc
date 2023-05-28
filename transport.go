@@ -8,7 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/go-kit/kit/transport"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
 )
 
@@ -18,10 +20,11 @@ var (
 	ErrTransportBadRouting = errors.New("inconsistent mapping between route and handler (programmer error)")
 )
 
-func MakeHTTPHandler(s Service) http.Handler {
+func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	e := MakeServerEndpoints(s)
 	options := []httptransport.ServerOption{
+		httptransport.ServerErrorHandler(transport.NewLogErrorHandler(logger)),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
@@ -50,6 +53,12 @@ func MakeHTTPHandler(s Service) http.Handler {
 	r.Methods("DELETE").Path("/slcan/{id}").Handler(httptransport.NewServer(
 		e.DeleteMessageEndpoint,
 		decodeDeleteMessageRequest,
+		encodeResponse,
+		options...,
+	))
+	r.Methods("POST").Path("/slcan/reboot").Handler(httptransport.NewServer(
+		e.RebootEndpoint,
+		decodeRebootRequest,
 		encodeResponse,
 		options...,
 	))
@@ -93,6 +102,10 @@ func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 		return nil, ErrTransportBadRouting
 	}
 	return deleteMessageRequest{ID: id}, nil
+}
+
+func decodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return rebootRequest{}, nil
 }
 
 type errorer interface {

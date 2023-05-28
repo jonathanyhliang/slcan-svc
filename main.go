@@ -41,7 +41,7 @@ func main() {
 
 	var h http.Handler
 	{
-		h = MakeHTTPHandler(s)
+		h = MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
 	}
 
 	errs := make(chan error)

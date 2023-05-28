@@ -52,6 +52,13 @@ func (mw loggingMiddleware) DeleteMessage(ctx context.Context, id string) (err e
 	return mw.next.DeleteMessage(ctx, id)
 }
 
+func (mw loggingMiddleware) Reboot(ctx context.Context) (err error) {
+	defer func(begin time.Time) {
+		mw.logger.Log("method", "Reboot", "took", time.Since(begin), "err", err)
+	}(time.Now())
+	return mw.next.Reboot(ctx)
+}
+
 func BackendMiddleware(backend Backend) Middleware {
 	return func(next Service) Service {
 		return &backendMiddleware{
@@ -68,6 +75,7 @@ type backendMiddleware struct {
 
 func (mw backendMiddleware) GetMessage(ctx context.Context, id string) (m Message, err error) {
 	d, e := mw.next.GetMessage(ctx, id)
+	// TODO: request from backend when message not existed
 	if e != nil {
 		e = mw.backend.GetMessage(id)
 	}
@@ -92,4 +100,12 @@ func (mw backendMiddleware) PutMessage(ctx context.Context, id string, m Message
 
 func (mw backendMiddleware) DeleteMessage(ctx context.Context, id string) (err error) {
 	return mw.next.DeleteMessage(ctx, id)
+}
+
+func (mw backendMiddleware) Reboot(ctx context.Context) (err error) {
+	e := mw.next.Reboot(ctx)
+	if e == nil {
+		e = mw.backend.Reboot()
+	}
+	return e
 }

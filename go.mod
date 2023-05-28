@@ -6,6 +6,7 @@ require (
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.0
 	github.com/gorilla/mux v1.8.0
+	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/stretchr/testify v1.8.1
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 )
