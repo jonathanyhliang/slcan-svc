@@ -3,15 +3,31 @@ services:
     image: rabbitmq:latest
     ports:
       - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["rabbitmq-diagnostics","-q", "ping"]
+      interval: 20s
+      timeout: 20s
+      retries: 3
   slcan:
     image: slcan-svc:latest
     ports:
       - "8080:8080"
+      - ":5672"
     devices:
-      - "class/{86E0D1E0-8089-11D0-9CE4-08003E301F73}:/dev/ttyACM0"
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: ["./slcan-svc", "-u", "rabbitmq://rabbitmq:5672","-p", "/dev/ttyACM0"]
   mcumgr:
     image: mcumgr-svc:latest
     ports:
       - "8081:8081"
+      - ":5672"
     devices:
-      - "class/{86E0D1E0-8089-11D0-9CE4-08003E301F73}:/dev/ttyACM0"
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: ["./mcumgr-svc", "-u", "rabbitmq://rabbitmq:5672", "-p", "/dev/ttyACM0"]
