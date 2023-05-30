@@ -5,7 +5,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     healthcheck:
-      test: ["rabbitmq-diagnostics","-q", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics","-q", "ping"]
       interval: 20s
       timeout: 20s
       retries: 3
@@ -19,7 +19,7 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-    command: ["./slcan-svc", "-u", "rabbitmq://rabbitmq:5672","-p", "/dev/ttyACM0"]
+    command: ["./slcan-svc", "-u", "amqp://guest:guest@rabbitmq:5672/","-p", "/dev/ttyACM0"]
   mcumgr:
     image: mcumgr-svc:latest
     ports:
@@ -30,4 +30,4 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-    command: ["./mcumgr-svc", "-u", "rabbitmq://rabbitmq:5672", "-p", "/dev/ttyACM0"]
+    command: ["./mcumgr-svc", "-u", "amqp://guest:guest@rabbitmq:5672/", "-p", "/dev/ttyACM0"]
