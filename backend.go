@@ -26,7 +26,7 @@ var (
 )
 
 type Backend interface {
-	Handler(port string, baud int, timeout time.Duration) error
+	Handler(port string, baud int, url string) error
 	GetMessage(id string) error
 	PostMessage(m Message) error
 	Reboot() error
@@ -46,8 +46,8 @@ func NewSlcanBackend() Backend {
 	}
 }
 
-func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) error {
-	c := &serial.Config{Name: port, Baud: baud, ReadTimeout: timeout}
+func (b *SlcanBackend) Handler(port string, baud int, url string) error {
+	c := &serial.Config{Name: port, Baud: baud, ReadTimeout: time.Second}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		return ErrBackendPortOpen
@@ -95,7 +95,7 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 				return ErrBackendPortOpen
 			}
 			// Ping MCUmgr service for firmware update
-			if err := msgQueuePing(); err != nil {
+			if err := msgQueuePing(url); err != nil {
 				return err
 			}
 			// Wait for MCUmgr service to establish serial connection
@@ -104,6 +104,8 @@ func (b *SlcanBackend) Handler(port string, baud int, timeout time.Duration) err
 			for {
 				s, err = serial.OpenPort(c)
 				if err == nil {
+					// Give SLCAN device 20s to boot + init
+					time.Sleep(20 * time.Second)
 					err = s.Flush()
 					if err != nil {
 						return ErrBackendPortFlush
@@ -231,8 +233,8 @@ func decapsSlcanFrame(f []byte) (Message, error) {
 	return m, nil
 }
 
-func msgQueuePing() error {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+func msgQueuePing(url string) error {
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		return ErrBackendMsgQueue
 	}

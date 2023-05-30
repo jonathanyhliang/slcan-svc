@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-kit/log"
 )
@@ -15,6 +14,7 @@ import (
 func main() {
 	var (
 		httpAddr = flag.String("a", ":8080", "HTTP listen address")
+		amqpURL  = flag.String("u", "amqp://guest:guest@localhost:5672/", "AMQP dialing address")
 		port     = flag.String("p", "", "SLCAN port")
 		baud     = flag.Int("b", 115200, "SLCAN port baudrate")
 	)
@@ -53,7 +53,7 @@ func main() {
 	}()
 
 	go func() {
-		errs <- b.Handler(*port, *baud, time.Second)
+		errs <- b.Handler(*port, *baud, *amqpURL)
 	}()
 
 	go func() {
