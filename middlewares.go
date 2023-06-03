@@ -24,7 +24,7 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-func (mw loggingMiddleware) GetMessage(ctx context.Context, id string) (m Message, err error) {
+func (mw loggingMiddleware) GetMessage(ctx context.Context, id int) (m Message, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "GetMessage", "id", id, "took", time.Since(begin), "err", err)
 	}(time.Now())
@@ -38,14 +38,14 @@ func (mw loggingMiddleware) PostMessage(ctx context.Context, m Message) (err err
 	return mw.next.PostMessage(ctx, m)
 }
 
-func (mw loggingMiddleware) PutMessage(ctx context.Context, id string, m Message) (err error) {
+func (mw loggingMiddleware) PutMessage(ctx context.Context, id int, m Message) (err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "PutMessage", "id", id, "took", time.Since(begin), "err", err)
 	}(time.Now())
 	return mw.next.PutMessage(ctx, id, m)
 }
 
-func (mw loggingMiddleware) DeleteMessage(ctx context.Context, id string) (err error) {
+func (mw loggingMiddleware) DeleteMessage(ctx context.Context, id int) (err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log("method", "DeleteMessage", "id", id, "took", time.Since(begin), "err", err)
 	}(time.Now())
@@ -73,7 +73,7 @@ type backendMiddleware struct {
 	backend Backend
 }
 
-func (mw backendMiddleware) GetMessage(ctx context.Context, id string) (m Message, err error) {
+func (mw backendMiddleware) GetMessage(ctx context.Context, id int) (m Message, err error) {
 	d, e := mw.next.GetMessage(ctx, id)
 	// TODO: request from backend when message not existed
 	if e != nil {
@@ -90,7 +90,7 @@ func (mw backendMiddleware) PostMessage(ctx context.Context, m Message) (err err
 	return e
 }
 
-func (mw backendMiddleware) PutMessage(ctx context.Context, id string, m Message) (err error) {
+func (mw backendMiddleware) PutMessage(ctx context.Context, id int, m Message) (err error) {
 	e := mw.next.PutMessage(ctx, id, m)
 	if e == nil {
 		e = mw.backend.PostMessage(m)
@@ -98,7 +98,7 @@ func (mw backendMiddleware) PutMessage(ctx context.Context, id string, m Message
 	return e
 }
 
-func (mw backendMiddleware) DeleteMessage(ctx context.Context, id string) (err error) {
+func (mw backendMiddleware) DeleteMessage(ctx context.Context, id int) (err error) {
 	return mw.next.DeleteMessage(ctx, id)
 }
 

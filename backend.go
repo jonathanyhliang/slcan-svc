@@ -27,7 +27,7 @@ var (
 
 type Backend interface {
 	Handler(port string, baud int, url string) error
-	GetMessage(id string) error
+	GetMessage(id int) error
 	PostMessage(m Message) error
 	Reboot() error
 }
@@ -144,7 +144,7 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 	}
 }
 
-func (b *SlcanBackend) GetMessage(id string) error {
+func (b *SlcanBackend) GetMessage(id int) error {
 	if b.hold == true {
 		return ErrBackendOnhold
 	}

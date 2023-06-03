@@ -11,8 +11,8 @@ var (
 )
 
 type Message struct {
-	ID   uint32 `json:"id"`
-	Data string `json:"data"`
+	ID   uint32 `json:"id" example:"123"`
+	Data string `json:"data" example:"200rpm"`
 }
 
 type Database struct {

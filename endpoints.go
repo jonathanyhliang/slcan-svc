@@ -65,7 +65,7 @@ func MakeRebootEndpoint(s Service) endpoint.Endpoint {
 }
 
 type getMessageRequest struct {
-	ID string
+	ID int
 }
 
 type getMessageResponse struct {
@@ -82,7 +82,7 @@ type postMessageResponse struct {
 }
 
 type putMessageRequest struct {
-	ID  string
+	ID  int
 	Msg Message `json:"message,omitempty"`
 }
 
@@ -91,7 +91,7 @@ type putMessageResponse struct {
 }
 
 type deleteMessageRequest struct {
-	ID string
+	ID int
 }
 
 type deleteMessageResponse struct {

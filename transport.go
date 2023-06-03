@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/go-kit/kit/transport"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -15,6 +16,8 @@ import (
 )
 
 var (
+	ErrServiceInvalidID = errors.New("Service: invalid ID")
+
 	// ErrBadRouting is returned when an expected path variable is missing.
 	// It always indicates programmer error.
 	ErrTransportBadRouting = errors.New("inconsistent mapping between route and handler (programmer error)")
@@ -62,6 +65,7 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		encodeResponse,
 		options...,
 	))
+
 	return r
 }
 
@@ -71,7 +75,11 @@ func decodeGetMessageRequest(_ context.Context, r *http.Request) (request interf
 	if !ok {
 		return nil, ErrTransportBadRouting
 	}
-	return getMessageRequest{ID: id}, nil
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, ErrServiceInvalidID
+	}
+	return getMessageRequest{ID: i}, nil
 }
 
 func decodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -92,7 +100,11 @@ func decodePutMessageRequest(_ context.Context, r *http.Request) (request interf
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
 		return nil, err
 	}
-	return putMessageRequest{ID: id, Msg: msg}, nil
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, ErrServiceInvalidID
+	}
+	return putMessageRequest{ID: i, Msg: msg}, nil
 }
 
 func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -101,7 +113,11 @@ func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 	if !ok {
 		return nil, ErrTransportBadRouting
 	}
-	return deleteMessageRequest{ID: id}, nil
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, ErrServiceInvalidID
+	}
+	return deleteMessageRequest{ID: i}, nil
 }
 
 func decodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {

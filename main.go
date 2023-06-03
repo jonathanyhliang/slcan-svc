@@ -9,7 +9,20 @@ import (
 	"syscall"
 
 	"github.com/go-kit/log"
+	"github.com/jonathanyhliang/slcan-svc/docs"
+
+	"github.com/gin-gonic/gin"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+//	@title		Serial-Line CAN Service API
+//	@version	1.0
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+//	@host	localhost:port
 
 func main() {
 	var (
@@ -59,6 +72,13 @@ func main() {
 	go func() {
 		logger.Log("transport", "HTTP", "addr", *httpAddr)
 		errs <- http.ListenAndServe(*httpAddr, h)
+	}()
+
+	go func() {
+		r := gin.Default()
+		docs.SwaggerInfo.BasePath = "/"
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+		r.Run(":8082")
 	}()
 
 	logger.Log("exit", <-errs)

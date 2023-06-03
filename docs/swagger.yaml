@@ -1,0 +1,145 @@
+definitions:
+  main.Message:
+    properties:
+      data:
+        example: 200rpm
+        type: string
+      id:
+        example: 123
+        type: integer
+    type: object
+host: localhost:port
+info:
+  contact: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Serial-Line CAN Service API
+  version: "1.0"
+paths:
+  /slcan/:
+    post:
+      consumes:
+      - application/json
+      description: Add new CAN message by specifying CAN ID and data
+      parameters:
+      - description: CAN Message
+        in: body
+        name: array
+        schema:
+          $ref: '#/definitions/main.Message'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Add new CAN message
+      tags:
+      - SLCAN
+  /slcan/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove CAN message by specifying CAN ID
+      parameters:
+      - description: CAN ID
+        in: path
+        maximum: 536870911
+        minimum: 0
+        name: int
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Remove CAN message
+      tags:
+      - SLCAN
+    get:
+      consumes:
+      - application/json
+      description: Retrieve CAN message by specifying CAN ID
+      parameters:
+      - description: CAN ID
+        in: path
+        maximum: 536870911
+        minimum: 0
+        name: int
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Message'
+            type: array
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Retrieve CAN message
+      tags:
+      - SLCAN
+    put:
+      consumes:
+      - application/json
+      description: Update existing CAN message by specifying CAN ID and data
+      parameters:
+      - description: CAN Message
+        in: body
+        name: array
+        schema:
+          $ref: '#/definitions/main.Message'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update existing CAN message
+      tags:
+      - SLCAN
+  /slcan/reboot:
+    post:
+      consumes:
+      - application/json
+      description: Reboot SLCAN device for firmware update
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Reboot SLCAN device
+      tags:
+      - SLCAN
+swagger: "2.0"
