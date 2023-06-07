@@ -9,7 +9,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:port",
+    "host": "localhost:port/slcan",
     "paths": {
         "/slcan/": {
             "post": {

@@ -13,6 +13,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 var (
@@ -41,7 +42,7 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		encodeResponse,
 		options...,
 	))
-	r.Methods("POST").Path("/slcan/").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/slcan").Handler(httptransport.NewServer(
 		e.PostMessageEndpoint,
 		decodePostMessageRequest,
 		encodeResponse,
@@ -65,6 +66,7 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	r.PathPrefix("/slcan/docs").Handler(httpSwagger.WrapHandler)
 
 	return r
 }

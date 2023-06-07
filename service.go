@@ -57,7 +57,7 @@ func (s *SlcanService) GetMessage(ctx context.Context, id int) (Message, error) 
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
-//	@Router			/slcan/ [post]
+//	@Router			/slcan [post]
 func (s *SlcanService) PostMessage(ctx context.Context, m Message) error {
 	if m.ID > CAN_ID_MAX {
 		return ErrServiceInvalidID

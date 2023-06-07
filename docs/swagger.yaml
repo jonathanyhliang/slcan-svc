@@ -8,7 +8,7 @@ definitions:
         example: 123
         type: integer
     type: object
-host: localhost:port
+host: localhost:port/slcan
 info:
   contact: {}
   license:
