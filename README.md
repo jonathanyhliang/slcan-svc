@@ -28,22 +28,13 @@ This repository implements a [go-kit](https://github.com/go-kit/kit) based micro
                 AMQP dialing address (default "amqp://guest:guest@localhost:5672/")
 ```
 
-5. Use curl to post CAN message
+5. Use curl to interact with RESTful APIs
 
 ```
 curl http://localhost:8080/slcan --include --header "Content-Type: application/json" \
 --request "POST" --data "{"id": 123, "data": "200rpm"}"
 ```
 
-6. to get CAN message
-
-```
-curl http://localhost:8080/slcan/123 --include --header "Content-Type: application/json" \
---request "GET"
-
-{"message":{"id":123,"data":"200rpm"}}
-
-```
 ## Intergrating with MCUmgr Service
 
 

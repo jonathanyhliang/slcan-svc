@@ -8,20 +8,20 @@ nwdiag {
   network http {
     address = "localhost"
     color = "red"
-    SLCAN-svc [address = "/8080           "]
-    MCUmgr-svc [address = "/8081          "]
+    SLCAN-svc [address = ":8080           "]
+    MCUmgr-svc [address = ":8081          "]
   }
   network amqp {
     address = "localhost"
     color = "palegreen"
-    SLCAN-svc [address = "Sender "]
-    MCUmgr-svc [address = "Receiver "]
-    RabbitMQ [address = "/5678            ", shape = node ]
+    SLCAN-svc [address = "Sender ", shape = node]
+    MCUmgr-svc [address = "Receiver ",shape = node]
+    RabbitMQ [address = ":5672            ", shape = node ]
   }
   network tty {
     SLCAN-svc
     MCUmgr-svc
-    COM
+    COM [shape = node]
   }
 }
 @enduml
