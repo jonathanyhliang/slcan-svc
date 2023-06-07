@@ -31,18 +31,18 @@ This repository implements a [go-kit](https://github.com/go-kit/kit) based micro
 5. Use curl to post CAN message
 
 ```
-curl http://localhost:8080/slcan --include --header "Content-Type: application/json" --request "POST" --data "{"id": 123, "data": "200rpm"}"
+curl http://localhost:8080/slcan --include --header "Content-Type: application/json" \
+--request "POST" --data "{"id": 123, "data": "200rpm"}"
 ```
 
 6. to get CAN message
 
 ```
-curl http://localhost:8080/slcan/123 --include --header "Content-Type: application/json" --request "GET"
+curl http://localhost:8080/slcan/123 --include --header "Content-Type: application/json" \
+--request "GET"
 
-[
-        {}
+{"message":{"id":123,"data":"200rpm"}}
 
-]
 ```
 ## Intergrating with MCUmgr Service
 
@@ -51,3 +51,8 @@ curl http://localhost:8080/slcan/123 --include --header "Content-Type: applicati
 
 ![slcan-group](/plantuml/diag/slcan-group/slcan-group.png)
 
+
+## API Documentation
+
+ 
+![api docs](/plantuml/diag/swag_ui.png)
