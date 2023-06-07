@@ -4,7 +4,7 @@
 ## Overview
 
 
-This repository implements a [go-kit](https://github.com/go-kit/kit) based microserivce which is capable of bridging serial-line CAN communication via RESTful APIs. The serial-line backend of the service is a [Serial-Line CAN]( ttps://github.com/torvalds/linux/blob/master/drivers/net/can/slcan/slcan-core.c) compliant end device.
+This repository implements a [go-kit](https://github.com/go-kit/kit) based microserivce which is capable of bridging serial-line CAN communication via RESTful APIs. The serial-line backend of the service is a [Serial-Line CAN](https://github.com/torvalds/linux/blob/master/drivers/net/can/slcan/slcan-core.c) compliant end device.
 
 
 ## Building and Running
