@@ -1,7 +1,6 @@
-FROM golang:1.19
+FROM golang:alpine
 
-RUN apt update \
-    && apt install -y --no-install-recommends socat 
+RUN apk add socat
 
 COPY . /root/slcan-svc
 
@@ -9,3 +8,5 @@ WORKDIR /root/slcan-svc
 
 RUN go mod tidy \
     && go build .
+
+# ENTRYPOINT [ "./entry.sh"]

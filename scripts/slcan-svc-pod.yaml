@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: slcan-svc-pod
+  labels:
+    app: slcansvc
+spec:
+  containers:
+  - name: slcan-svc
+    image: jonathanyhliang/slcan-svc:0.2
+    ports:
+    - containerPort: 8080
