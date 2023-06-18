@@ -22,7 +22,7 @@ import (
 
 func main() {
 	var (
-		httpAddr = flag.String("a", ":8080", "HTTP listen address")
+		httpAddr = flag.String("a", ":8081", "HTTP listen address")
 		amqpURL  = flag.String("u", "amqp://guest:guest@localhost:5672/", "AMQP dialing address")
 		port     = flag.String("p", "", "SLCAN port")
 		baud     = flag.Int("b", 115200, "SLCAN port baudrate")
