@@ -12,6 +12,7 @@ type Endpoints struct {
 	PutMessageEndpoint    endpoint.Endpoint
 	DeleteMessageEndpoint endpoint.Endpoint
 	RebootEndpoint        endpoint.Endpoint
+	UnlockEndpoint        endpoint.Endpoint
 }
 
 func MakeServerEndpoints(s Service) Endpoints {
@@ -21,6 +22,7 @@ func MakeServerEndpoints(s Service) Endpoints {
 		PutMessageEndpoint:    MakePutMessageEndpoint(s),
 		DeleteMessageEndpoint: MakeDeleteMessageEndpoint(s),
 		RebootEndpoint:        MakeRebootEndpoint(s),
+		UnlockEndpoint:        MakeUnlockEndpoint(s),
 	}
 }
 
@@ -64,6 +66,14 @@ func MakeRebootEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
+func MakeUnlockEndpoint(s Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		_ = request.(unlockRequest)
+		e := s.Unlock(ctx)
+		return unlockResponse{Err: e}, nil
+	}
+}
+
 type getMessageRequest struct {
 	ID int
 }
@@ -101,5 +111,11 @@ type deleteMessageResponse struct {
 type rebootRequest struct{}
 
 type rebootResponse struct {
+	Err error `json:"err,omitempty"`
+}
+
+type unlockRequest struct{}
+
+type unlockResponse struct {
 	Err error `json:"err,omitempty"`
 }

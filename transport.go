@@ -66,6 +66,12 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	r.Methods("POST").Path("/slcan/unlock").Handler(httptransport.NewServer(
+		e.UnlockEndpoint,
+		decodeUnlockRequest,
+		encodeResponse,
+		options...,
+	))
 	r.PathPrefix("/slcan/docs").Handler(httpSwagger.WrapHandler)
 
 	return r
@@ -124,6 +130,10 @@ func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 
 func decodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	return rebootRequest{}, nil
+}
+
+func decodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return unlockRequest{}, nil
 }
 
 type errorer interface {

@@ -15,6 +15,7 @@ type Service interface {
 	PutMessage(ctx context.Context, id int, m Message) error
 	DeleteMessage(ctx context.Context, id int) error
 	Reboot(ctx context.Context) error
+	Unlock(ctx context.Context) error
 }
 
 type SlcanService struct{}
@@ -121,5 +122,22 @@ func (s *SlcanService) DeleteMessage(ctx context.Context, id int) error {
 //	@Failure		500
 //	@Router			/slcan/reboot [post]
 func (s *SlcanService) Reboot(ctx context.Context) error {
+	return nil
+}
+
+// Unlock godoc
+//
+//	@Summary	Unlock serial backend
+//	@Schemes
+//	@Description	Unlock serial backend from the success of firmware update
+//	@Tags			SLCAN
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
+//	@Router			/slcan/unlock [post]
+func (s *SlcanService) Unlock(ctx context.Context) error {
 	return nil
 }

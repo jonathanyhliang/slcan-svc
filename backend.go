@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -30,25 +31,35 @@ type Backend interface {
 	GetMessage(id int) error
 	PostMessage(m Message) error
 	Reboot() error
+	Unlock() error
 }
 
 type SlcanBackend struct {
+	init chan bool
 	ch   chan Message
 	rst  chan bool
-	hold bool
+	hold sync.Mutex
 }
 
 func NewSlcanBackend() Backend {
 	return &SlcanBackend{
+		init: make(chan bool),
 		ch:   make(chan Message),
 		rst:  make(chan bool),
-		hold: false,
 	}
 }
 
 func (b *SlcanBackend) Handler(port string, baud int, url string) error {
+	var s *serial.Port
+	var err error
+	var sl []byte
 	c := &serial.Config{Name: port, Baud: baud, ReadTimeout: time.Second}
-	s, err := serial.OpenPort(c)
+
+	rlptr := 0
+	rl := make([]byte, len("T1234567880123456789abcdef\r\x00"))
+	rb := make([]byte, 1)
+
+	s, err = serial.OpenPort(c)
 	if err != nil {
 		return ErrBackendPortOpen
 	}
@@ -58,9 +69,6 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 		return ErrBackendPortFlush
 	}
 
-	rlptr := 0
-	rl := make([]byte, len("T1234567880123456789abcdef\r\x00"))
-
 	// Initialise SLCAN port
 	_, err = s.Write([]byte("C\rO\r\x00"))
 	if err != nil {
@@ -69,15 +77,32 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 
 	for {
 		select {
+		case <-b.init:
+			s, err = serial.OpenPort(c)
+			if err != nil {
+				return ErrBackendPortOpen
+			}
+
+			err = s.Flush()
+			if err != nil {
+				return ErrBackendPortFlush
+			}
+
+			// Initialise SLCAN port
+			_, err = s.Write([]byte("C\rO\r\x00"))
+			if err != nil {
+				return ErrBackendSlcanInit
+			}
+
 		case m := <-b.ch:
-			if sl, err := encapsSlcanFrame(m); err == nil {
+			if sl, err = encapsSlcanFrame(m); err == nil {
 				_, err = s.Write([]byte(sl))
 			} else {
 				return err
 			}
 		case <-b.rst:
 			// Frontend receives "Reboot" request, prompt SLCAN device to reset
-			if _, err := s.Write([]byte("bbbbbb\r\x00")); err != nil {
+			if _, err = s.Write([]byte("bbbbbb\r\x00")); err != nil {
 				return ErrBackendReboot
 			}
 			// Wait for SLCAN device to reboot
@@ -87,7 +112,7 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 				return ErrBackendReboot
 			}
 			// To prevent frontend requests from accessing serial backend
-			b.hold = true
+			b.hold.Lock()
 			// Wait for any ongoing serial transactions to complete
 			time.Sleep(3 * time.Second)
 			// Close serial connection
@@ -98,31 +123,14 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 			if err := msgQueuePing(url); err != nil {
 				return err
 			}
-			// Wait for MCUmgr service to establish serial connection
-			time.Sleep(10 * time.Second)
-			// Attemp to recover serial connection once MCUmgr service handover
-			for {
-				s, err = serial.OpenPort(c)
-				if err == nil {
-					// Give SLCAN device 20s to boot + init
-					time.Sleep(20 * time.Second)
-					err = s.Flush()
-					if err != nil {
-						return ErrBackendPortFlush
-					}
-					_, err = s.Write([]byte("C\rO\r\x00"))
-					if err != nil {
-						return ErrBackendSlcanInit
-					}
-					break
-				}
-				time.Sleep(1 * time.Second)
+
+			for !b.hold.TryLock() {
+				time.Sleep(time.Second)
 			}
-			// Recover requests from frontend
-			b.hold = false
+
+			b.hold.Unlock()
 
 		default:
-			rb := make([]byte, 1)
 			if n, err := s.Read(rb); n > 0 && err == nil {
 				rl[rlptr] = rb[0]
 				rlptr += 1
@@ -145,22 +153,34 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 }
 
 func (b *SlcanBackend) GetMessage(id int) error {
-	if b.hold == true {
+	if !b.hold.TryLock() {
 		return ErrBackendOnhold
 	}
+	defer b.hold.Unlock()
 	return nil
 }
 
 func (b *SlcanBackend) PostMessage(m Message) error {
-	if b.hold == true {
+	if !b.hold.TryLock() {
 		return ErrBackendOnhold
 	}
+	defer b.hold.Unlock()
 	b.ch <- m
 	return nil
 }
 
 func (b *SlcanBackend) Reboot() error {
+	if !b.hold.TryLock() {
+		return ErrBackendOnhold
+	}
+	defer b.hold.Unlock()
 	b.rst <- true
+	return nil
+}
+
+func (b *SlcanBackend) Unlock() error {
+	b.hold.Unlock()
+	b.init <- true
 	return nil
 }
 

@@ -59,6 +59,13 @@ func (mw loggingMiddleware) Reboot(ctx context.Context) (err error) {
 	return mw.next.Reboot(ctx)
 }
 
+func (mw loggingMiddleware) Unlock(ctx context.Context) (err error) {
+	defer func(begin time.Time) {
+		mw.logger.Log("method", "Unlock", "took", time.Since(begin), "err", err)
+	}(time.Now())
+	return mw.next.Unlock(ctx)
+}
+
 func BackendMiddleware(backend Backend) Middleware {
 	return func(next Service) Service {
 		return &backendMiddleware{
@@ -106,6 +113,14 @@ func (mw backendMiddleware) Reboot(ctx context.Context) (err error) {
 	e := mw.next.Reboot(ctx)
 	if e == nil {
 		e = mw.backend.Reboot()
+	}
+	return e
+}
+
+func (mw backendMiddleware) Unlock(ctx context.Context) (err error) {
+	e := mw.next.Unlock(ctx)
+	if e == nil {
+		e = mw.backend.Unlock()
 	}
 	return e
 }
