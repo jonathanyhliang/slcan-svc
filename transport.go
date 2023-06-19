@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -38,38 +36,38 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 	// DELETE  /slcan/:id 	remove the given SLCAN message
 	r.Methods("GET").Path("/slcan/{id}").Handler(httptransport.NewServer(
 		e.GetMessageEndpoint,
-		decodeGetMessageRequest,
-		encodeResponse,
+		DecodeGetMessageRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.Methods("POST").Path("/slcan").Handler(httptransport.NewServer(
 		e.PostMessageEndpoint,
-		decodePostMessageRequest,
-		encodeResponse,
+		DecodePostMessageRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.Methods("PUT").Path("/slcan/{id}").Handler(httptransport.NewServer(
 		e.PutMessageEndpoint,
-		decodePutMessageRequest,
-		encodeResponse,
+		DecodePutMessageRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.Methods("DELETE").Path("/slcan/{id}").Handler(httptransport.NewServer(
 		e.DeleteMessageEndpoint,
-		decodeDeleteMessageRequest,
-		encodeResponse,
+		DecodeDeleteMessageRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.Methods("POST").Path("/slcan/reboot").Handler(httptransport.NewServer(
 		e.RebootEndpoint,
-		decodeRebootRequest,
-		encodeResponse,
+		DecodeRebootRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.Methods("POST").Path("/slcan/unlock").Handler(httptransport.NewServer(
 		e.UnlockEndpoint,
-		decodeUnlockRequest,
-		encodeResponse,
+		DecodeUnlockRequest,
+		EncodeResponse,
 		options...,
 	))
 	r.PathPrefix("/slcan/docs").Handler(httpSwagger.WrapHandler)
@@ -77,7 +75,7 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 	return r
 }
 
-func decodeGetMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodeGetMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
 	if !ok {
@@ -90,7 +88,7 @@ func decodeGetMessageRequest(_ context.Context, r *http.Request) (request interf
 	return getMessageRequest{ID: i}, nil
 }
 
-func decodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var req postMessageRequest
 	if e := json.NewDecoder(r.Body).Decode(&req.Msg); e != nil {
 		return nil, e
@@ -98,7 +96,7 @@ func decodePostMessageRequest(_ context.Context, r *http.Request) (request inter
 	return req, nil
 }
 
-func decodePutMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
 	if !ok {
@@ -115,7 +113,7 @@ func decodePutMessageRequest(_ context.Context, r *http.Request) (request interf
 	return putMessageRequest{ID: i, Msg: msg}, nil
 }
 
-func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
 	if !ok {
@@ -128,11 +126,11 @@ func decodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 	return deleteMessageRequest{ID: i}, nil
 }
 
-func decodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	return rebootRequest{}, nil
 }
 
-func decodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func DecodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	return unlockRequest{}, nil
 }
 
@@ -140,7 +138,7 @@ type errorer interface {
 	error() error
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
 		// Provide those as HTTP errors.
@@ -149,16 +147,6 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeRequest(_ context.Context, req *http.Request, request interface{}) error {
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(request)
-	if err != nil {
-		return err
-	}
-	req.Body = ioutil.NopCloser(&buf)
-	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
