@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -88,12 +90,44 @@ func DecodeGetMessageRequest(_ context.Context, r *http.Request) (request interf
 	return getMessageRequest{ID: i}, nil
 }
 
+func EncodeGetMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("GET").Path("/slcan/{id}")
+	r := request.(getMessageRequest)
+	id := strconv.Itoa(r.ID)
+	req.URL.Path = "/slcan/" + id
+	return encodeRequest(ctx, req, nil)
+}
+
+func DecodeGetMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp getMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
 func DecodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var req postMessageRequest
 	if e := json.NewDecoder(r.Body).Decode(&req.Msg); e != nil {
 		return nil, e
 	}
 	return req, nil
+}
+
+func EncodePostMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("POST").Path("/slcan")
+	req.URL.Path = "/slcan"
+	return encodeRequest(ctx, req, request)
+}
+
+func DecodePostMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp postMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
 }
 
 func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -113,6 +147,23 @@ func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interf
 	return putMessageRequest{ID: i, Msg: msg}, nil
 }
 
+func EncodePutMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("PUT").Path("/slcan/{id}")
+	r := request.(putMessageRequest)
+	id := strconv.Itoa(r.ID)
+	req.URL.Path = "/slcan/" + id
+	return encodeRequest(ctx, req, request)
+}
+
+func DecodePutMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp putMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
 func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	vars := mux.Vars(r)
 	id, ok := vars["id"]
@@ -126,16 +177,76 @@ func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 	return deleteMessageRequest{ID: i}, nil
 }
 
+func EncodeDeleteMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("DELETE").Path("/slcan/{id}")
+	r := request.(deleteMessageRequest)
+	id := strconv.Itoa(r.ID)
+	req.URL.Path = "/slcan/" + id
+	return encodeRequest(ctx, req, request)
+}
+
+func DecodeDeleteMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp deleteMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
 func DecodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	return rebootRequest{}, nil
+}
+
+func EncodeRebootRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("POST").Path("/slcan/reboot")
+	req.URL.Path = "/slcan/reboot"
+	return encodeRequest(ctx, req, request)
+}
+
+func DecodeRebootResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp rebootResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
 }
 
 func DecodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	return unlockRequest{}, nil
 }
 
+func EncodeUnlockRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("POST").Path("/slcan/unlock")
+	req.URL.Path = "/slcan/unlock"
+	return encodeRequest(ctx, req, request)
+}
+
+func DecodeUnlockResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp unlockResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
 type errorer interface {
 	error() error
+}
+
+// encodeRequest likewise JSON-encodes the request to the HTTP request body.
+// Don't use it directly as a transport/http.Client EncodeRequestFunc:
+// profilesvc endpoints require mutating the HTTP method and request path.
+func encodeRequest(_ context.Context, req *http.Request, request interface{}) error {
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(request)
+	if err != nil {
+		return err
+	}
+	req.Body = ioutil.NopCloser(&buf)
+	return nil
 }
 
 func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {

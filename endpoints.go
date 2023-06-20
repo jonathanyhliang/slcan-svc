@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
 	"github.com/go-kit/kit/endpoint"
+	httptransport "github.com/go-kit/kit/transport/http"
 )
 
 type Endpoints struct {
@@ -24,6 +27,35 @@ func MakeServerEndpoints(s Service) Endpoints {
 		RebootEndpoint:        MakeRebootEndpoint(s),
 		UnlockEndpoint:        MakeUnlockEndpoint(s),
 	}
+}
+
+// MakeClientEndpoints returns an Endpoints struct where each endpoint invokes
+// the corresponding method on the remote instance, via a transport/http.Client.
+// Useful in a profilesvc client.
+func MakeClientEndpoints(instance string) (Endpoints, error) {
+	if !strings.HasPrefix(instance, "http") {
+		instance = "http://" + instance
+	}
+	tgt, err := url.Parse(instance)
+	if err != nil {
+		return Endpoints{}, err
+	}
+	tgt.Path = ""
+
+	options := []httptransport.ClientOption{}
+
+	// Note that the request encoders need to modify the request URL, changing
+	// the path. That's fine: we simply need to provide specific encoders for
+	// each endpoint.
+
+	return Endpoints{
+		GetMessageEndpoint:    httptransport.NewClient("GET", tgt, EncodeGetMessageRequest, DecodeGetMessageResponse, options...).Endpoint(),
+		PostMessageEndpoint:   httptransport.NewClient("POST", tgt, EncodePostMessageRequest, DecodePostMessageResponse, options...).Endpoint(),
+		PutMessageEndpoint:    httptransport.NewClient("PUT", tgt, EncodePutMessageRequest, DecodePutMessageResponse, options...).Endpoint(),
+		DeleteMessageEndpoint: httptransport.NewClient("DELETE", tgt, EncodeDeleteMessageRequest, DecodeDeleteMessageResponse, options...).Endpoint(),
+		RebootEndpoint:        httptransport.NewClient("POST", tgt, EncodeRebootRequest, DecodeRebootResponse, options...).Endpoint(),
+		UnlockEndpoint:        httptransport.NewClient("POST", tgt, EncodeUnlockRequest, DecodeUnlockResponse, options...).Endpoint(),
+	}, nil
 }
 
 func MakeGetMessageEndpoint(s Service) endpoint.Endpoint {
