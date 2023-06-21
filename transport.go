@@ -32,10 +32,6 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	// GET     /slcan/:id	retrieves the given SLCAN message by id
-	// POST    /slcan/		adds another SLCAN message
-	// PUT     /slcan/:id	post updated SLCAN message
-	// DELETE  /slcan/:id 	remove the given SLCAN message
 	r.Methods("GET").Path("/slcan/{id}").Handler(httptransport.NewServer(
 		e.GetMessageEndpoint,
 		DecodeGetMessageRequest,
@@ -238,7 +234,7 @@ type errorer interface {
 
 // encodeRequest likewise JSON-encodes the request to the HTTP request body.
 // Don't use it directly as a transport/http.Client EncodeRequestFunc:
-// profilesvc endpoints require mutating the HTTP method and request path.
+// Endpoints require mutating the HTTP method and request path.
 func encodeRequest(_ context.Context, req *http.Request, request interface{}) error {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(request)

@@ -31,7 +31,6 @@ func MakeServerEndpoints(s Service) Endpoints {
 
 // MakeClientEndpoints returns an Endpoints struct where each endpoint invokes
 // the corresponding method on the remote instance, via a transport/http.Client.
-// Useful in a profilesvc client.
 func MakeClientEndpoints(instance string) (Endpoints, error) {
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance

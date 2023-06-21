@@ -179,8 +179,11 @@ func (b *SlcanBackend) Reboot() error {
 }
 
 func (b *SlcanBackend) Unlock() error {
+	if !b.hold.TryLock() {
+		b.init <- true
+	}
 	b.hold.Unlock()
-	b.init <- true
+
 	return nil
 }
 
