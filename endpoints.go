@@ -63,96 +63,155 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 	}, nil
 }
 
+// struct Endpoints implements interface IService. Primarily useful in a client.
+func (e Endpoints) GetMessage(ctx context.Context, id int) (Message, error) {
+	request := getMessageRequest{ID: id}
+	response, err := e.GetMessageEndpoint(ctx, request)
+	if err != nil {
+		return Message{}, err
+	}
+	resp := response.(getMessageResponse)
+	return resp.Msg, resp.Err
+}
+
+func (e Endpoints) PostMessage(ctx context.Context, m Message) error {
+	request := postMessageRequest{Msg: m}
+	response, err := e.PostMessageEndpoint(ctx, request)
+	if err != nil {
+		return err
+	}
+	resp := response.(postMessageResponse)
+	return resp.Err
+}
+
+func (e Endpoints) PutMessage(ctx context.Context, id int, m Message) error {
+	request := putMessageRequest{ID: id, Msg: m}
+	response, err := e.PutMessageEndpoint(ctx, request)
+	if err != nil {
+		return err
+	}
+	resp := response.(putMessageResponse)
+	return resp.Err
+}
+
+func (e Endpoints) DeleteMessage(ctx context.Context, id int) error {
+	request := deleteMessageRequest{ID: id}
+	response, err := e.DeleteMessageEndpoint(ctx, request)
+	if err != nil {
+		return err
+	}
+	resp := response.(deleteMessageResponse)
+	return resp.Err
+}
+
+func (e Endpoints) Reboot(ctx context.Context) error {
+	response, err := e.DeleteMessageEndpoint(ctx, rebootRequest{})
+	if err != nil {
+		return err
+	}
+	resp := response.(rebootResponse)
+	return resp.Err
+}
+
+func (e Endpoints) Unlock(ctx context.Context) error {
+	response, err := e.DeleteMessageEndpoint(ctx, unlockRequest{})
+	if err != nil {
+		return err
+	}
+	resp := response.(unlockResponse)
+	return resp.Err
+}
+
 func MakeGetMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(GetMessageRequest)
+		req := request.(getMessageRequest)
 		m, e := s.GetMessage(ctx, req.ID)
-		return GetMessageResponse{Msg: m, Err: e}, nil
+		return getMessageResponse{Msg: m, Err: e}, nil
 	}
 }
 
 func MakePostMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(PostMessageRequest)
+		req := request.(postMessageRequest)
 		e := s.PostMessage(ctx, req.Msg)
-		return PostMessageResponse{Err: e}, nil
+		return postMessageResponse{Err: e}, nil
 	}
 }
 
 func MakePutMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(PutMessageRequest)
+		req := request.(putMessageRequest)
 		e := s.PutMessage(ctx, req.ID, req.Msg)
-		return PutMessageResponse{Err: e}, nil
+		return putMessageResponse{Err: e}, nil
 	}
 }
 
 func MakeDeleteMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(DeleteMessageRequest)
+		req := request.(deleteMessageRequest)
 		e := s.DeleteMessage(ctx, req.ID)
-		return DeleteMessageResponse{Err: e}, nil
+		return deleteMessageResponse{Err: e}, nil
 	}
 }
 
 func MakeRebootEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		_ = request.(RebootRequest)
+		_ = request.(rebootRequest)
 		e := s.Reboot(ctx)
-		return RebootResponse{Err: e}, nil
+		return rebootResponse{Err: e}, nil
 	}
 }
 
 func MakeUnlockEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		_ = request.(UnlockRequest)
+		_ = request.(unlockRequest)
 		e := s.Unlock(ctx)
-		return UnlockResponse{Err: e}, nil
+		return unlockResponse{Err: e}, nil
 	}
 }
 
-type GetMessageRequest struct {
+type getMessageRequest struct {
 	ID int
 }
 
-type GetMessageResponse struct {
+type getMessageResponse struct {
 	Msg Message `json:"message,omitempty"`
 	Err error   `json:"err,omitempty"`
 }
 
-type PostMessageRequest struct {
+type postMessageRequest struct {
 	Msg Message `json:"message,omitempty"`
 }
 
-type PostMessageResponse struct {
+type postMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type PutMessageRequest struct {
+type putMessageRequest struct {
 	ID  int
 	Msg Message `json:"message,omitempty"`
 }
 
-type PutMessageResponse struct {
+type putMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type DeleteMessageRequest struct {
+type deleteMessageRequest struct {
 	ID int
 }
 
-type DeleteMessageResponse struct {
+type deleteMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type RebootRequest struct{}
+type rebootRequest struct{}
 
-type RebootResponse struct {
+type rebootResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type UnlockRequest struct{}
+type unlockRequest struct{}
 
-type UnlockResponse struct {
+type unlockResponse struct {
 	Err error `json:"err,omitempty"`
 }

@@ -81,11 +81,11 @@ func DecodeGetMessageRequest(_ context.Context, r *http.Request) (request interf
 	if err != nil {
 		return nil, ErrTransportBadRouting
 	}
-	return GetMessageRequest{ID: i}, nil
+	return getMessageRequest{ID: i}, nil
 }
 
 func DecodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	var req PostMessageRequest
+	var req postMessageRequest
 	if e := json.NewDecoder(r.Body).Decode(&req.Msg); e != nil {
 		return nil, e
 	}
@@ -106,7 +106,7 @@ func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interf
 	if err != nil {
 		return nil, ErrTransportBadRouting
 	}
-	return PutMessageRequest{ID: i, Msg: msg}, nil
+	return putMessageRequest{ID: i, Msg: msg}, nil
 }
 
 func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -119,15 +119,15 @@ func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 	if err != nil {
 		return nil, ErrTransportBadRouting
 	}
-	return DeleteMessageRequest{ID: i}, nil
+	return deleteMessageRequest{ID: i}, nil
 }
 
 func DecodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	return RebootRequest{}, nil
+	return rebootRequest{}, nil
 }
 
 func DecodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	return UnlockRequest{}, nil
+	return unlockRequest{}, nil
 }
 
 func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -143,7 +143,7 @@ func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 
 func EncodeGetMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
 	// r.Methods("GET").Path("/slcan/{id}")
-	r := request.(GetMessageRequest)
+	r := request.(getMessageRequest)
 	id := strconv.Itoa(r.ID)
 	req.URL.Path = "/slcan/" + id
 	return encodeRequest(ctx, req, nil)
@@ -157,7 +157,7 @@ func EncodePostMessageRequest(ctx context.Context, req *http.Request, request in
 
 func EncodePutMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
 	// r.Methods("PUT").Path("/slcan/{id}")
-	r := request.(PutMessageRequest)
+	r := request.(putMessageRequest)
 	id := strconv.Itoa(r.ID)
 	req.URL.Path = "/slcan/" + id
 	return encodeRequest(ctx, req, request)
@@ -165,7 +165,7 @@ func EncodePutMessageRequest(ctx context.Context, req *http.Request, request int
 
 func EncodeDeleteMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
 	// r.Methods("DELETE").Path("/slcan/{id}")
-	r := request.(DeleteMessageRequest)
+	r := request.(deleteMessageRequest)
 	id := strconv.Itoa(r.ID)
 	req.URL.Path = "/slcan/" + id
 	return encodeRequest(ctx, req, request)
@@ -187,7 +187,7 @@ func DecodeGetMessageResponse(_ context.Context, r *http.Response) (interface{},
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp GetMessageResponse
+	var resp getMessageResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -196,7 +196,7 @@ func DecodePostMessageResponse(_ context.Context, r *http.Response) (interface{}
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp PostMessageResponse
+	var resp postMessageResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -205,7 +205,7 @@ func DecodePutMessageResponse(_ context.Context, r *http.Response) (interface{},
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp PutMessageResponse
+	var resp putMessageResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -214,7 +214,7 @@ func DecodeDeleteMessageResponse(_ context.Context, r *http.Response) (interface
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp DeleteMessageResponse
+	var resp deleteMessageResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -223,7 +223,7 @@ func DecodeRebootResponse(_ context.Context, r *http.Response) (interface{}, err
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp RebootResponse
+	var resp rebootResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -232,7 +232,7 @@ func DecodeUnlockResponse(_ context.Context, r *http.Response) (interface{}, err
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp UnlockResponse
+	var resp unlockResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
