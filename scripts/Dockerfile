@@ -1,6 +1,6 @@
 FROM golang:alpine
 
-RUN apk add socat
+RUN apk add socat git 
 
 COPY ../ /root/slcan-svc
 

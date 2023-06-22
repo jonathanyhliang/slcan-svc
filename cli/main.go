@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/go-kit/log"
+	slcansvc "github.com/jonathanyhliang/slcan-svc"
 	"github.com/jonathanyhliang/slcan-svc/docs"
 )
 
@@ -22,7 +23,7 @@ import (
 
 func main() {
 	var (
-		httpAddr = flag.String("a", ":8081", "HTTP listen address")
+		httpAddr = flag.String("a", ":8080", "HTTP listen address")
 		amqpURL  = flag.String("u", "amqp://guest:guest@localhost:5672/", "AMQP dialing address")
 		port     = flag.String("p", "", "SLCAN port")
 		baud     = flag.Int("b", 115200, "SLCAN port baudrate")
@@ -36,21 +37,21 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	var b Backend
+	var b slcansvc.IBackend
 	{
-		b = NewSlcanBackend()
+		b = slcansvc.NewBackend()
 	}
 
-	var s Service
+	var s slcansvc.IService
 	{
-		s = NewSlcanService()
-		s = BackendMiddleware(b)(s)
-		s = LoggingMiddleware(logger)(s)
+		s = slcansvc.NewService()
+		s = slcansvc.BackendMiddleware(b)(s)
+		s = slcansvc.LoggingMiddleware(logger)(s)
 	}
 
 	var h http.Handler
 	{
-		h = MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
+		h = slcansvc.MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
 	}
 
 	errs := make(chan error)

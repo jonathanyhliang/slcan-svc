@@ -1,4 +1,4 @@
-package main
+package slcansvc
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type Endpoints struct {
 	UnlockEndpoint        endpoint.Endpoint
 }
 
-func MakeServerEndpoints(s Service) Endpoints {
+func MakeServerEndpoints(s IService) Endpoints {
 	return Endpoints{
 		GetMessageEndpoint:    MakeGetMessageEndpoint(s),
 		PostMessageEndpoint:   MakePostMessageEndpoint(s),
@@ -48,105 +48,111 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 	// each endpoint.
 
 	return Endpoints{
-		GetMessageEndpoint:    httptransport.NewClient("GET", tgt, EncodeGetMessageRequest, DecodeGetMessageResponse, options...).Endpoint(),
-		PostMessageEndpoint:   httptransport.NewClient("POST", tgt, EncodePostMessageRequest, DecodePostMessageResponse, options...).Endpoint(),
-		PutMessageEndpoint:    httptransport.NewClient("PUT", tgt, EncodePutMessageRequest, DecodePutMessageResponse, options...).Endpoint(),
-		DeleteMessageEndpoint: httptransport.NewClient("DELETE", tgt, EncodeDeleteMessageRequest, DecodeDeleteMessageResponse, options...).Endpoint(),
-		RebootEndpoint:        httptransport.NewClient("POST", tgt, EncodeRebootRequest, DecodeRebootResponse, options...).Endpoint(),
-		UnlockEndpoint:        httptransport.NewClient("POST", tgt, EncodeUnlockRequest, DecodeUnlockResponse, options...).Endpoint(),
+		GetMessageEndpoint: httptransport.NewClient("GET", tgt,
+			EncodeGetMessageRequest, DecodeGetMessageResponse, options...).Endpoint(),
+		PostMessageEndpoint: httptransport.NewClient("POST", tgt,
+			EncodePostMessageRequest, DecodePostMessageResponse, options...).Endpoint(),
+		PutMessageEndpoint: httptransport.NewClient("PUT", tgt,
+			EncodePutMessageRequest, DecodePutMessageResponse, options...).Endpoint(),
+		DeleteMessageEndpoint: httptransport.NewClient("DELETE", tgt,
+			EncodeDeleteMessageRequest, DecodeDeleteMessageResponse, options...).Endpoint(),
+		RebootEndpoint: httptransport.NewClient("POST", tgt,
+			EncodeRebootRequest, DecodeRebootResponse, options...).Endpoint(),
+		UnlockEndpoint: httptransport.NewClient("POST", tgt,
+			EncodeUnlockRequest, DecodeUnlockResponse, options...).Endpoint(),
 	}, nil
 }
 
-func MakeGetMessageEndpoint(s Service) endpoint.Endpoint {
+func MakeGetMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(getMessageRequest)
+		req := request.(GetMessageRequest)
 		m, e := s.GetMessage(ctx, req.ID)
-		return getMessageResponse{Msg: m, Err: e}, nil
+		return GetMessageResponse{Msg: m, Err: e}, nil
 	}
 }
 
-func MakePostMessageEndpoint(s Service) endpoint.Endpoint {
+func MakePostMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(postMessageRequest)
+		req := request.(PostMessageRequest)
 		e := s.PostMessage(ctx, req.Msg)
-		return postMessageResponse{Err: e}, nil
+		return PostMessageResponse{Err: e}, nil
 	}
 }
 
-func MakePutMessageEndpoint(s Service) endpoint.Endpoint {
+func MakePutMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(putMessageRequest)
+		req := request.(PutMessageRequest)
 		e := s.PutMessage(ctx, req.ID, req.Msg)
-		return putMessageResponse{Err: e}, nil
+		return PutMessageResponse{Err: e}, nil
 	}
 }
 
-func MakeDeleteMessageEndpoint(s Service) endpoint.Endpoint {
+func MakeDeleteMessageEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(deleteMessageRequest)
+		req := request.(DeleteMessageRequest)
 		e := s.DeleteMessage(ctx, req.ID)
-		return deleteMessageResponse{Err: e}, nil
+		return DeleteMessageResponse{Err: e}, nil
 	}
 }
 
-func MakeRebootEndpoint(s Service) endpoint.Endpoint {
+func MakeRebootEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		_ = request.(rebootRequest)
+		_ = request.(RebootRequest)
 		e := s.Reboot(ctx)
-		return rebootResponse{Err: e}, nil
+		return RebootResponse{Err: e}, nil
 	}
 }
 
-func MakeUnlockEndpoint(s Service) endpoint.Endpoint {
+func MakeUnlockEndpoint(s IService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		_ = request.(unlockRequest)
+		_ = request.(UnlockRequest)
 		e := s.Unlock(ctx)
-		return unlockResponse{Err: e}, nil
+		return UnlockResponse{Err: e}, nil
 	}
 }
 
-type getMessageRequest struct {
+type GetMessageRequest struct {
 	ID int
 }
 
-type getMessageResponse struct {
+type GetMessageResponse struct {
 	Msg Message `json:"message,omitempty"`
 	Err error   `json:"err,omitempty"`
 }
 
-type postMessageRequest struct {
+type PostMessageRequest struct {
 	Msg Message `json:"message,omitempty"`
 }
 
-type postMessageResponse struct {
+type PostMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type putMessageRequest struct {
+type PutMessageRequest struct {
 	ID  int
 	Msg Message `json:"message,omitempty"`
 }
 
-type putMessageResponse struct {
+type PutMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type deleteMessageRequest struct {
+type DeleteMessageRequest struct {
 	ID int
 }
 
-type deleteMessageResponse struct {
+type DeleteMessageResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type rebootRequest struct{}
+type RebootRequest struct{}
 
-type rebootResponse struct {
+type RebootResponse struct {
 	Err error `json:"err,omitempty"`
 }
 
-type unlockRequest struct{}
+type UnlockRequest struct{}
 
-type unlockResponse struct {
+type UnlockResponse struct {
 	Err error `json:"err,omitempty"`
 }

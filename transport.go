@@ -1,4 +1,4 @@
-package main
+package slcansvc
 
 import (
 	"bytes"
@@ -17,14 +17,12 @@ import (
 )
 
 var (
-	ErrServiceInvalidID = errors.New("Service: invalid ID")
-
-	// ErrBadRouting is returned when an expected path variable is missing.
+	// ErrTransportBadRouting is returned when an expected path variable is missing.
 	// It always indicates programmer error.
-	ErrTransportBadRouting = errors.New("inconsistent mapping between route and handler (programmer error)")
+	ErrTransportBadRouting = errors.New("Transport: bad routing")
 )
 
-func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
+func MakeHTTPHandler(s IService, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	e := MakeServerEndpoints(s)
 	options := []httptransport.ServerOption{
@@ -81,49 +79,17 @@ func DecodeGetMessageRequest(_ context.Context, r *http.Request) (request interf
 	}
 	i, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, ErrServiceInvalidID
+		return nil, ErrTransportBadRouting
 	}
-	return getMessageRequest{ID: i}, nil
-}
-
-func EncodeGetMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("GET").Path("/slcan/{id}")
-	r := request.(getMessageRequest)
-	id := strconv.Itoa(r.ID)
-	req.URL.Path = "/slcan/" + id
-	return encodeRequest(ctx, req, nil)
-}
-
-func DecodeGetMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	var resp getMessageResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
+	return GetMessageRequest{ID: i}, nil
 }
 
 func DecodePostMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	var req postMessageRequest
+	var req PostMessageRequest
 	if e := json.NewDecoder(r.Body).Decode(&req.Msg); e != nil {
 		return nil, e
 	}
 	return req, nil
-}
-
-func EncodePostMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("POST").Path("/slcan")
-	req.URL.Path = "/slcan"
-	return encodeRequest(ctx, req, request)
-}
-
-func DecodePostMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	var resp postMessageResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
 }
 
 func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -138,26 +104,9 @@ func DecodePutMessageRequest(_ context.Context, r *http.Request) (request interf
 	}
 	i, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, ErrServiceInvalidID
+		return nil, ErrTransportBadRouting
 	}
-	return putMessageRequest{ID: i, Msg: msg}, nil
-}
-
-func EncodePutMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("PUT").Path("/slcan/{id}")
-	r := request.(putMessageRequest)
-	id := strconv.Itoa(r.ID)
-	req.URL.Path = "/slcan/" + id
-	return encodeRequest(ctx, req, request)
-}
-
-func DecodePutMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	var resp putMessageResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
+	return PutMessageRequest{ID: i, Msg: msg}, nil
 }
 
 func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -168,30 +117,58 @@ func DecodeDeleteMessageRequest(_ context.Context, r *http.Request) (request int
 	}
 	i, err := strconv.Atoi(id)
 	if err != nil {
-		return nil, ErrServiceInvalidID
+		return nil, ErrTransportBadRouting
 	}
-	return deleteMessageRequest{ID: i}, nil
+	return DeleteMessageRequest{ID: i}, nil
 }
 
-func EncodeDeleteMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
-	// r.Methods("DELETE").Path("/slcan/{id}")
-	r := request.(deleteMessageRequest)
+func DecodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return RebootRequest{}, nil
+}
+
+func DecodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return UnlockRequest{}, nil
+}
+
+func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	if e, ok := response.(errorer); ok && e.error() != nil {
+		// Not a Go kit transport error, but a business-logic error.
+		// Provide those as HTTP errors.
+		encodeError(ctx, e.error(), w)
+		return nil
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	return json.NewEncoder(w).Encode(response)
+}
+
+func EncodeGetMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("GET").Path("/slcan/{id}")
+	r := request.(GetMessageRequest)
+	id := strconv.Itoa(r.ID)
+	req.URL.Path = "/slcan/" + id
+	return encodeRequest(ctx, req, nil)
+}
+
+func EncodePostMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("POST").Path("/slcan")
+	req.URL.Path = "/slcan"
+	return encodeRequest(ctx, req, request)
+}
+
+func EncodePutMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("PUT").Path("/slcan/{id}")
+	r := request.(PutMessageRequest)
 	id := strconv.Itoa(r.ID)
 	req.URL.Path = "/slcan/" + id
 	return encodeRequest(ctx, req, request)
 }
 
-func DecodeDeleteMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	var resp deleteMessageResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
-}
-
-func DecodeRebootRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	return rebootRequest{}, nil
+func EncodeDeleteMessageRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("DELETE").Path("/slcan/{id}")
+	r := request.(DeleteMessageRequest)
+	id := strconv.Itoa(r.ID)
+	req.URL.Path = "/slcan/" + id
+	return encodeRequest(ctx, req, request)
 }
 
 func EncodeRebootRequest(ctx context.Context, req *http.Request, request interface{}) error {
@@ -200,30 +177,62 @@ func EncodeRebootRequest(ctx context.Context, req *http.Request, request interfa
 	return encodeRequest(ctx, req, request)
 }
 
-func DecodeRebootResponse(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	var resp rebootResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
-}
-
-func DecodeUnlockRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	return unlockRequest{}, nil
-}
-
 func EncodeUnlockRequest(ctx context.Context, req *http.Request, request interface{}) error {
 	// r.Methods("POST").Path("/slcan/unlock")
 	req.URL.Path = "/slcan/unlock"
 	return encodeRequest(ctx, req, request)
 }
 
+func DecodeGetMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp GetMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
+func DecodePostMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp PostMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
+func DecodePutMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp PutMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
+func DecodeDeleteMessageResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp DeleteMessageResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
+func DecodeRebootResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errors.New(r.Status)
+	}
+	var resp RebootResponse
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return resp, err
+}
+
 func DecodeUnlockResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp unlockResponse
+	var resp UnlockResponse
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return resp, err
 }
@@ -245,17 +254,6 @@ func encodeRequest(_ context.Context, req *http.Request, request interface{}) er
 	return nil
 }
 
-func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		// Not a Go kit transport error, but a business-logic error.
-		// Provide those as HTTP errors.
-		encodeError(ctx, e.error(), w)
-		return nil
-	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	return json.NewEncoder(w).Encode(response)
-}
-
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
 		panic("encodeError with nil error")
@@ -271,7 +269,7 @@ func codeFrom(err error) int {
 	switch err {
 	case ErrDatabaseNotFound:
 		return http.StatusNotFound
-	case ErrDatabaseAlreadyExists, ErrServiceInvalidID:
+	case ErrDatabaseAlreadyExists, ErrTransportBadRouting:
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError

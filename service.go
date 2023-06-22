@@ -1,7 +1,12 @@
-package main
+package slcansvc
 
 import (
 	"context"
+	"errors"
+)
+
+var (
+	ErrServiceInvalidID = errors.New("Service: invalid id")
 )
 
 const (
@@ -9,7 +14,7 @@ const (
 	CAN_ID_MAX = 0x1fffffff
 )
 
-type Service interface {
+type IService interface {
 	GetMessage(ctx context.Context, id int) (Message, error)
 	PostMessage(ctx context.Context, m Message) error
 	PutMessage(ctx context.Context, id int, m Message) error
@@ -18,10 +23,10 @@ type Service interface {
 	Unlock(ctx context.Context) error
 }
 
-type SlcanService struct{}
+type Service struct{}
 
-func NewSlcanService() Service {
-	return &SlcanService{}
+func NewService() IService {
+	return &Service{}
 }
 
 // GetMessage godoc
@@ -38,7 +43,7 @@ func NewSlcanService() Service {
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan/{id} [get]
-func (s *SlcanService) GetMessage(ctx context.Context, id int) (Message, error) {
+func (s *Service) GetMessage(ctx context.Context, id int) (Message, error) {
 	if id < CAN_ID_MIN || id > CAN_ID_MAX {
 		return Message{}, ErrServiceInvalidID
 	}
@@ -59,7 +64,7 @@ func (s *SlcanService) GetMessage(ctx context.Context, id int) (Message, error) 
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan [post]
-func (s *SlcanService) PostMessage(ctx context.Context, m Message) error {
+func (s *Service) PostMessage(ctx context.Context, m Message) error {
 	if m.ID > CAN_ID_MAX {
 		return ErrServiceInvalidID
 	}
@@ -80,7 +85,7 @@ func (s *SlcanService) PostMessage(ctx context.Context, m Message) error {
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan/{id} [put]
-func (s *SlcanService) PutMessage(ctx context.Context, id int, m Message) error {
+func (s *Service) PutMessage(ctx context.Context, id int, m Message) error {
 	if id < CAN_ID_MIN || id > CAN_ID_MAX {
 		return ErrServiceInvalidID
 	}
@@ -101,7 +106,7 @@ func (s *SlcanService) PutMessage(ctx context.Context, id int, m Message) error 
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan/{id} [delete]
-func (s *SlcanService) DeleteMessage(ctx context.Context, id int) error {
+func (s *Service) DeleteMessage(ctx context.Context, id int) error {
 	if id < CAN_ID_MIN || id > CAN_ID_MAX {
 		return ErrServiceInvalidID
 	}
@@ -121,7 +126,7 @@ func (s *SlcanService) DeleteMessage(ctx context.Context, id int) error {
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan/reboot [post]
-func (s *SlcanService) Reboot(ctx context.Context) error {
+func (s *Service) Reboot(ctx context.Context) error {
 	return nil
 }
 
@@ -138,6 +143,6 @@ func (s *SlcanService) Reboot(ctx context.Context) error {
 //	@Failure		404
 //	@Failure		500
 //	@Router			/slcan/unlock [post]
-func (s *SlcanService) Unlock(ctx context.Context) error {
+func (s *Service) Unlock(ctx context.Context) error {
 	return nil
 }

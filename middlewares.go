@@ -1,4 +1,4 @@
-package main
+package slcansvc
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 )
 
 // Middleware describes a service (as opposed to endpoint) middleware.
-type Middleware func(Service) Service
+type Middleware func(IService) IService
 
 func LoggingMiddleware(logger log.Logger) Middleware {
-	return func(next Service) Service {
+	return func(next IService) IService {
 		return &loggingMiddleware{
 			next:   next,
 			logger: logger,
@@ -20,7 +20,7 @@ func LoggingMiddleware(logger log.Logger) Middleware {
 }
 
 type loggingMiddleware struct {
-	next   Service
+	next   IService
 	logger log.Logger
 }
 
@@ -66,8 +66,8 @@ func (mw loggingMiddleware) Unlock(ctx context.Context) (err error) {
 	return mw.next.Unlock(ctx)
 }
 
-func BackendMiddleware(backend Backend) Middleware {
-	return func(next Service) Service {
+func BackendMiddleware(backend IBackend) Middleware {
+	return func(next IService) IService {
 		return &backendMiddleware{
 			next:    next,
 			backend: backend,
@@ -76,8 +76,8 @@ func BackendMiddleware(backend Backend) Middleware {
 }
 
 type backendMiddleware struct {
-	next    Service
-	backend Backend
+	next    IService
+	backend IBackend
 }
 
 func (mw backendMiddleware) GetMessage(ctx context.Context, id int) (m Message, err error) {

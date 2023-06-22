@@ -1,4 +1,4 @@
-package main
+package slcansvc
 
 import (
 	"context"
@@ -26,7 +26,7 @@ var (
 	ErrBackendMsgQueue     = errors.New("Backend: message queue ping failed")
 )
 
-type Backend interface {
+type IBackend interface {
 	Handler(port string, baud int, url string) error
 	GetMessage(id int) error
 	PostMessage(m Message) error
@@ -34,22 +34,22 @@ type Backend interface {
 	Unlock() error
 }
 
-type SlcanBackend struct {
+type Backend struct {
 	init chan bool
 	ch   chan Message
 	rst  chan bool
 	hold sync.Mutex
 }
 
-func NewSlcanBackend() Backend {
-	return &SlcanBackend{
+func NewBackend() IBackend {
+	return &Backend{
 		init: make(chan bool),
 		ch:   make(chan Message),
 		rst:  make(chan bool),
 	}
 }
 
-func (b *SlcanBackend) Handler(port string, baud int, url string) error {
+func (b *Backend) Handler(port string, baud int, url string) error {
 	var s *serial.Port
 	var err error
 	var sl []byte
@@ -152,7 +152,7 @@ func (b *SlcanBackend) Handler(port string, baud int, url string) error {
 	}
 }
 
-func (b *SlcanBackend) GetMessage(id int) error {
+func (b *Backend) GetMessage(id int) error {
 	if !b.hold.TryLock() {
 		return ErrBackendOnhold
 	}
@@ -160,7 +160,7 @@ func (b *SlcanBackend) GetMessage(id int) error {
 	return nil
 }
 
-func (b *SlcanBackend) PostMessage(m Message) error {
+func (b *Backend) PostMessage(m Message) error {
 	if !b.hold.TryLock() {
 		return ErrBackendOnhold
 	}
@@ -169,7 +169,7 @@ func (b *SlcanBackend) PostMessage(m Message) error {
 	return nil
 }
 
-func (b *SlcanBackend) Reboot() error {
+func (b *Backend) Reboot() error {
 	if !b.hold.TryLock() {
 		return ErrBackendOnhold
 	}
@@ -178,7 +178,7 @@ func (b *SlcanBackend) Reboot() error {
 	return nil
 }
 
-func (b *SlcanBackend) Unlock() error {
+func (b *Backend) Unlock() error {
 	if !b.hold.TryLock() {
 		b.init <- true
 	}
