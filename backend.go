@@ -94,6 +94,9 @@ func (b *Backend) Handler(port string, baud int, url string) error {
 				return ErrBackendSlcanInit
 			}
 
+			// To allow frontend requests to access serial backend
+			b.hold.Unlock()
+
 		case m := <-b.ch:
 			if sl, err = encapsSlcanFrame(m); err == nil {
 				_, err = s.Write([]byte(sl))
@@ -123,12 +126,6 @@ func (b *Backend) Handler(port string, baud int, url string) error {
 			if err := msgQueuePing(url); err != nil {
 				return err
 			}
-
-			for !b.hold.TryLock() {
-				time.Sleep(time.Second)
-			}
-
-			b.hold.Unlock()
 
 		default:
 			if n, err := s.Read(rb); n > 0 && err == nil {
@@ -182,7 +179,6 @@ func (b *Backend) Unlock() error {
 	if !b.hold.TryLock() {
 		b.init <- true
 	}
-	b.hold.Unlock()
 
 	return nil
 }
