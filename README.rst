@@ -14,7 +14,7 @@ compliant for interfacing a `slcan <https://github.com/jonathanyhliang/zephyr/tr
 Building and Running
 ####################
 
-Clone ``slcan-svc`` repository
+Clone and build ``slcan-svc`` repository:
 
 .. code-block:: console
 
