@@ -38,7 +38,7 @@ func NewService() IService {
 //	@Param			int	path	int	true	"CAN ID"	minimum(0)	maximum(536870911)
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	main.Message
+//	@Success		200	{array}	slcansvc.Message
 //	@Failure		400
 //	@Failure		404
 //	@Failure		500
@@ -56,7 +56,7 @@ func (s *Service) GetMessage(ctx context.Context, id int) (Message, error) {
 //	@Schemes
 //	@Description	Add new CAN message by specifying CAN ID and data
 //	@Tags			SLCAN
-//	@Param			array	body	main.Message	false	"CAN Message"
+//	@Param			array	body	slcansvc.Message	false	"CAN Message"
 //	@Accept			json
 //	@Produce		json
 //	@Success		200
@@ -77,7 +77,7 @@ func (s *Service) PostMessage(ctx context.Context, m Message) error {
 //	@Schemes
 //	@Description	Update existing CAN message by specifying CAN ID and data
 //	@Tags			SLCAN
-//	@Param			array	body	main.Message	false	"CAN Message"
+//	@Param			array	body	slcansvc.Message	false	"CAN Message"
 //	@Accept			json
 //	@Produce		json
 //	@Success		200

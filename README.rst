@@ -9,7 +9,8 @@ which is capable of bridging serial-line CAN communication via RESTful APIs. The
 backend of the service is partially `Serial-Line CAN <https://github.com/torvalds/linux/blob/master/drivers/net/can/slcan/slcan-core.c>`_
 compliant for interfacing a `slcan <https://github.com/jonathanyhliang/zephyr/tree/slcan/samples/subsys/canbus/slcan>`_ end device.
 
-``slcan-svc`` could interact with `mcumgr-svc <>`_ using ``RabbitMQ`` to perform ``Device Firmware Update``. See `demo-svc <>`_ for the detail.
+``slcan-svc`` could interact with `mcumgr-svc <https://github.com/jonathanyhliang/mcumgr-svc>`_ using ``RabbitMQ`` to perform
+``Device Firmware Update``. See `demo-svc <https://github.com/jonathanyhliang/demo-svc>`_ for the detail.
 
 Building and Running
 ####################
