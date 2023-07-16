@@ -145,6 +145,8 @@ func (b *Backend) Handler(port string, baud int, url string) error {
 				}
 			} else {
 			}
+
+			time.Sleep(500 * time.Microsecond)
 		}
 	}
 }
